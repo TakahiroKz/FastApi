@@ -27,3 +27,9 @@ def message():
 
 def get_movies():
     return movies
+
+@app.get('/movies', tags=['movies'])
+
+def get_movies_by_category(category:str):
+
+    return category
