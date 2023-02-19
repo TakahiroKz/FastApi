@@ -1,10 +1,33 @@
-from fastapi import FastAPI, Body
+from fastapi import FastAPI, Body, Path, Query
 from fastapi.responses import HTMLResponse
+from pydantic import BaseModel, Field
+from typing import Optional
 
 
 app = FastAPI()
 app.title = "Mi aplicacion con FastApi"
 app.version = "0.0.1"
+
+#Esquema para recibir datos.
+class Movie(BaseModel):
+    id: Optional[int] = None
+    title : str = Field(max_length=15)
+    overview : str = Field(min_length=5,max_length=50)
+    year : str = Field(max_length="4")
+    rating : float = Field(ge=1, le=10)
+    category : str = Field(min_length=5, max_length=20)
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "id" : 1,
+                "title": "Mi pelicula",
+                "overview" : "Descripcion de la pelicula",
+                "year": "2023",
+                "rating" : 10.0,
+                "category" : "Acción"
+            }
+        }
 
 movies=[
     {
@@ -35,9 +58,9 @@ def message():
 def get_movies():
     return movies
 
-#Retornar pelicula filtrada por ID
+#Retornar pelicula filtrada por ID, Validaciones parametros ruta
 @app.get('/movies/{id}', tags=['movies'])
-def get_movie(id:int):
+def get_movie(id:int = Path(ge=1, le=2000)):
     for item in movies:
         if item["id"] == id:
             return item
@@ -45,46 +68,41 @@ def get_movie(id:int):
             response = "Pelicula no encontrada"
     return response
 
-#Obtener peliculas filtradas por categoria
+#Obtener peliculas filtradas por categoria Validacion parametros Query
 @app.get('/movies/',tags=['movies'])
-def get_movies_by_category(category: str, year:str):
+def get_movies_by_category(category: str = Query(min_length=5, max_length=15) ):
     #Solucion 2
     """for item in movies:
         if item["category"] == category and item["year"] == year:
             return item""" 
-    return [item for item in movies  if item["category"] == category and item["year"] == year]
+    return [item for item in movies  if item["category"] == category]
 
 #Crear una nueva pelicula
 @app.post('/movies',tags=['movies'])
-def create_movie(id:int = Body(), title:str = Body(),overview:str= Body(),year:str = Body(),rating:float = Body(),category:str = Body()):
-    movies.append({
-        "id": id,
-        "title:":title,
-        "overview":overview,
-        "year":year,
-        "rating":rating,
-        "category":category
-    })
+def create_movie(movie: Movie):
+    movies.append(movie)
     return movies
 
 #Modificar una pelicula
 @app.put('/movies/{id}',tags=['movies'])
-def update_movie(id:int, title:str = Body(),overview:str= Body(),year:str = Body(),rating:float = Body(),category:str = Body()):
+def update_movie(id: int, movie: Movie):
     for item in movies:
         if item["id"] == id:
-            item["title"] = title
-            item["overview"] = overview
-            item["rating"] = rating
-            item["year"] = year
-            item["category"] = category
+            item["title"] = movie.title
+            item["overview"] = movie.overview
+            item["rating"] = movie.rating
+            item["year"] = movie.year
+            item["category"] = movie.category
             return item
     return []
 
 #Eliminar una pelicula
 @app.delete('/movies/{id}',tags=['movies']) 
 def delete_movie(id:int):
+    title = ''
     for item in movies:
         if item["id"] == id:
             title = item["title"]
             movies.remove(item)
-    return f"Pelicula con titulo:'{title}' eliminada"  
+            return f"Pelicula con titulo:'{title}' eliminada"  
+    return "No se encontro ninguna pelicula"
