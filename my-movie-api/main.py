@@ -19,8 +19,6 @@ class JWTBearer(HTTPBearer):
         if data['email'] != "admin@gmail.com":
             raise HTTPException(status_code=403, detail="Credenciales son invalidas")
 
-
-
 class Movie(BaseModel):
     id: Optional[int] = None
     title : str = Field(max_length=15)
