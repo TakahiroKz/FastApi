@@ -15,13 +15,13 @@ Base.metadata.create_all(bind=engine)
 
 #Esquema para recibir datos.
 
+
 class JWTBearer(HTTPBearer):
     async def __call__(self, request:Request):
         auth = await super().__call__(request)
         data = validate_token(auth.credentials)
         if data['email'] != "admin@gmail.com":
             raise HTTPException(status_code=403, detail="Credenciales son invalidas")
-
 
 class Movie(BaseModel):
     id: Optional[int] = None
@@ -82,7 +82,7 @@ def login(user: user):
 
 
 #Retornar todas la peliculas
-@app.get('/movies', tags=['movies'],response_model=List[Movie], status_code=200, dependencies=[Depends(JWTBearer())]) 
+@app.get('/movies', tags=['movies'],response_model=List[Movie], status_code=200,dependencies=[Depends(JWTBearer())])
 def get_movies() -> List[Movie]:
     return JSONResponse(status_code=200,content=movies)
 
