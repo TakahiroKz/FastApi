@@ -4,8 +4,9 @@ from pydantic import BaseModel, Field
 from typing import Optional, List
 from jwt_manager import create_token, validate_token
 from fastapi.security import HTTPBearer
-from config.database import session,engine, Base
-from models.movie import Movie
+from models.movie import Movie as MovieModel
+from config.database import Base, session, engine
+
 
 app = FastAPI()
 app.title = "Mi aplicacion con FastApi"
@@ -14,7 +15,6 @@ app.version = "0.0.1"
 Base.metadata.create_all(bind=engine)
 
 #Esquema para recibir datos.
-
 
 class JWTBearer(HTTPBearer):
     async def __call__(self, request:Request):
@@ -27,7 +27,7 @@ class Movie(BaseModel):
     id: Optional[int] = None
     title : str = Field(max_length=15)
     overview : str = Field(min_length=5,max_length=50)
-    year : str = Field(max_length="4")
+    year : int = Field(le=3000)
     rating : float = Field(ge=1, le=10)
     category : str = Field(min_length=5, max_length=20)
 
@@ -37,7 +37,7 @@ class Movie(BaseModel):
                 "id" : 1,
                 "title": "Mi pelicula",
                 "overview" : "Descripcion de la pelicula",
-                "year": "2023",
+                "year": 2023,
                 "rating" : 10.0,
                 "category" : "Acción"
             }
@@ -82,8 +82,10 @@ def login(user: user):
 
 
 #Retornar todas la peliculas
-@app.get('/movies', tags=['movies'],response_model=List[Movie], status_code=200,dependencies=[Depends(JWTBearer())])
+@app.get('/movies', tags=['movies'],response_model=List[Movie], status_code=200) #,dependencies=[Depends(JWTBearer())]
 def get_movies() -> List[Movie]:
+    db = session()
+    result = db.query().all()
     return JSONResponse(status_code=200,content=movies)
 
 #Retornar pelicula filtrada por ID, Validaciones parametros ruta / Path
@@ -99,13 +101,18 @@ def get_movie(id:int = Path(ge=1, le=2000))-> Movie :
 #Obtener peliculas filtradas por categoria Validacion parametros Query
 @app.get('/movies/',tags=['movies'],response_model=List[Movie],status_code=200)
 def get_movies_by_category(category: str = Query(min_length=5, max_length=15)) -> List[Movie]:
-    data = [item for item in movies  if item["category"] == category]
+    data = [item for item in movies  if item["category"] == category.capitalize()]
     return JSONResponse(status_code=200, content=data)
 
 #Crear una nueva pelicula
 @app.post('/movies',tags=['movies'],response_model=dict,status_code=201)
 def create_movie(movie: Movie) -> dict:
-    movies.append(movie)
+    db = session()
+    print(movie)
+    new_movie = MovieModel(**movie.dict())
+    print("Nueva pelicula insertada: ",new_movie)
+    db.add(new_movie)
+    db.commit()
     return JSONResponse(status_code=201,content={"message":"Se ha registrado la pelicula"})
 
 #Modificar una pelicula
