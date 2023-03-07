@@ -5,7 +5,7 @@ from typing import Optional, List
 from jwt_manager import create_token, validate_token
 from fastapi.security import HTTPBearer
 from config.database import session,engine, Base
-from models.movie import Movie
+from models.movie import Movie as MovieModel
 
 app = FastAPI()
 app.title = "Mi aplicacion con FastApi"
@@ -27,7 +27,7 @@ class Movie(BaseModel):
     id: Optional[int] = None
     title : str = Field(max_length=15)
     overview : str = Field(min_length=5,max_length=50)
-    year : str = Field(max_length="4")
+    year : str = Field(max_length=5)
     rating : float = Field(ge=1, le=10)
     category : str = Field(min_length=5, max_length=20)
 
@@ -105,7 +105,11 @@ def get_movies_by_category(category: str = Query(min_length=5, max_length=15)) -
 #Crear una nueva pelicula
 @app.post('/movies',tags=['movies'],response_model=dict,status_code=201)
 def create_movie(movie: Movie) -> dict:
-    movies.append(movie)
+    db = session()
+    new_movie = MovieModel(**movie.dict())
+    db.add(new_movie)
+    db.commit()
+    #movies.append(movie)
     return JSONResponse(status_code=201,content={"message":"Se ha registrado la pelicula"})
 
 #Modificar una pelicula
