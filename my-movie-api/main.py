@@ -4,14 +4,9 @@ from pydantic import BaseModel, Field
 from typing import Optional, List
 from jwt_manager import create_token, validate_token
 from fastapi.security import HTTPBearer
-<<<<<<< HEAD
 from config.database import session,engine, Base
 from models.movie import Movie as MovieModel
-=======
-from models.movie import Movie as MovieModel
-from config.database import Base, session, engine
 
->>>>>>> 76e59153891e198879a7cdcd02c922f0790572f1
 
 app = FastAPI()
 app.title = "Mi aplicacion con FastApi"
@@ -32,11 +27,7 @@ class Movie(BaseModel):
     id: Optional[int] = None
     title : str = Field(max_length=15)
     overview : str = Field(min_length=5,max_length=50)
-<<<<<<< HEAD
-    year : str = Field(max_length=5)
-=======
     year : int = Field(le=3000)
->>>>>>> 76e59153891e198879a7cdcd02c922f0790572f1
     rating : float = Field(ge=1, le=10)
     category : str = Field(min_length=5, max_length=20)
 
@@ -117,18 +108,11 @@ def get_movies_by_category(category: str = Query(min_length=5, max_length=15)) -
 @app.post('/movies',tags=['movies'],response_model=dict,status_code=201)
 def create_movie(movie: Movie) -> dict:
     db = session()
-<<<<<<< HEAD
-    new_movie = MovieModel(**movie.dict())
-    db.add(new_movie)
-    db.commit()
-    #movies.append(movie)
-=======
     print(movie)
     new_movie = MovieModel(**movie.dict())
     print("Nueva pelicula insertada: ",new_movie)
     db.add(new_movie)
     db.commit()
->>>>>>> 76e59153891e198879a7cdcd02c922f0790572f1
     return JSONResponse(status_code=201,content={"message":"Se ha registrado la pelicula"})
 
 #Modificar una pelicula
