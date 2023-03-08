@@ -6,6 +6,7 @@ from jwt_manager import create_token, validate_token
 from fastapi.security import HTTPBearer
 from models.movie import Movie as MovieModel
 from config.database import Base, session, engine
+from fastapi.encoders import jsonable_encoder
 
 
 app = FastAPI()
@@ -85,30 +86,31 @@ def login(user: user):
 @app.get('/movies', tags=['movies'],response_model=List[Movie], status_code=200) #,dependencies=[Depends(JWTBearer())]
 def get_movies() -> List[Movie]:
     db = session()
-    result = db.query().all()
-    return JSONResponse(status_code=200,content=movies)
+    result = db.query(MovieModel).all()
+    return JSONResponse(status_code=200,content=jsonable_encoder(result))
 
 #Retornar pelicula filtrada por ID, Validaciones parametros ruta / Path
 @app.get('/movies/{id}', tags=['movies'],response_model=Movie,status_code=200)
 def get_movie(id:int = Path(ge=1, le=2000))-> Movie :
-    for item in movies:
-        if item["id"] == id:
-            return JSONResponse(status_code=200,content=item)
-        else:
-            response = JSONResponse(status_code=404,content="No se encontro la pelicula")
-    return response
+    db = session()
+    result = db.query(MovieModel).filter(MovieModel.id == id).first()
+    if  not result:
+        return JSONResponse(status_code=404,content={'message': 'Pelicula no encontrada'})
+    return JSONResponse(status_code=200,content=jsonable_encoder(result))
 
 #Obtener peliculas filtradas por categoria Validacion parametros Query
 @app.get('/movies/',tags=['movies'],response_model=List[Movie],status_code=200)
 def get_movies_by_category(category: str = Query(min_length=5, max_length=15)) -> List[Movie]:
-    data = [item for item in movies  if item["category"] == category.capitalize()]
-    return JSONResponse(status_code=200, content=data)
+    db = session()
+    result = db.query(MovieModel).filter(MovieModel.category == category).first()
+    if not result:
+        return JSONResponse(status_code=404, content={'message':'Pelicula no encontrada'})
+    return JSONResponse(status_code=200, content=jsonable_encoder(result))
 
 #Crear una nueva pelicula
 @app.post('/movies',tags=['movies'],response_model=dict,status_code=201)
 def create_movie(movie: Movie) -> dict:
     db = session()
-    print(movie)
     new_movie = MovieModel(**movie.dict())
     print("Nueva pelicula insertada: ",new_movie)
     db.add(new_movie)
